@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Limber Huaycho | Portafolio</title>
+    <title>Limber Huaycho | Desarrollador Junior</title>
+    <meta name="description" content="Portafolio profesional de Limber Huaycho - Desarrollador Junior especializado en aplicaciones y juegos">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <!-- Floating Background Shapes -->
+    <!-- Floating shapes background -->
     <div class="bg-shapes">
         <div class="shape shape-1"></div>
         <div class="shape shape-2"></div>
@@ -18,229 +20,273 @@
         <div class="shape shape-5"></div>
     </div>
 
-    <!-- Navbar -->
+    <!-- Navigation -->
     <nav class="navbar" id="navbar">
         <div class="nav-container">
             <a href="#" class="nav-logo">
-                <div class="logo-icon">LH</div>
-                <span>Limber<span class="logo-accent">NML</span></span>
+                <span class="logo-icon">LH</span>
+                <span class="logo-text">Limber<span class="logo-accent">NML</span></span>
             </a>
-            <ul class="nav-links" id="navLinks">
+            <button class="nav-toggle" id="navToggle" aria-label="Menú">
+                <span class="hamburger"></span>
+            </button>
+            <ul class="nav-menu" id="navMenu">
                 <li><a href="#inicio" class="nav-link active">Inicio</a></li>
                 <li><a href="#sobre-mi" class="nav-link">Sobre Mí</a></li>
-                <li><a href="#habilidades" class="nav-link">Skills</a></li>
+                <li><a href="#servicios" class="nav-link">Servicios</a></li>
                 <li><a href="#proyectos" class="nav-link">Proyectos</a></li>
                 <li><a href="#contacto" class="nav-link">Contacto</a></li>
+                <li><a href="privado.html" class="nav-link nav-admin"><i class="fas fa-lock"></i> Admin</a></li>
             </ul>
-            <button class="nav-toggle" id="navToggle" aria-label="Menú">
-                <span></span><span></span><span></span>
-            </button>
         </div>
     </nav>
 
     <!-- Hero Section -->
     <section class="hero" id="inicio">
-        <div class="hero-content">
-            <div class="hero-badge">
-                <span class="badge-dot"></span>
-                Disponible para trabajar
+        <div class="hero-container">
+            <div class="hero-content">
+                <div class="hero-badge animate-on-scroll">
+                    <i class="fas fa-code"></i> Disponible para proyectos
+                </div>
+                <p class="hero-greeting animate-on-scroll">Hola, soy</p>
+                <h1 class="hero-name animate-on-scroll">
+                    Limber<br>
+                    <span class="hero-name-accent">Huaycho</span>
+                </h1>
+                <p class="hero-subtitle animate-on-scroll">
+                    Desarrollador Junior • Creo aplicaciones y juegos
+                </p>
+                <div class="hero-buttons animate-on-scroll">
+                    <a href="#proyectos" class="btn btn-primary btn-hero" id="btn-proyectos">
+                        <i class="fas fa-chevron-down"></i> Mis Proyectos
+                    </a>
+                    <a href="https://wa.me/59173265343" target="_blank" class="btn btn-outline btn-hero" id="btn-whatsapp">
+                        <i class="fab fa-whatsapp"></i> WhatsApp
+                    </a>
+                    <a href="https://github.com/limberhuaycho" target="_blank" class="btn btn-outline btn-hero" id="btn-github">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                    <a href="https://youtube.com/@limberhuaycho" target="_blank" class="btn btn-outline btn-hero btn-youtube" id="btn-youtube">
+                        <i class="fab fa-youtube"></i> YouTube
+                    </a>
+                </div>
+                <div class="hero-stats animate-on-scroll">
+                    <div class="stat-item">
+                        <span class="stat-number" id="stat-projects">0</span>
+                        <span class="stat-label">Proyectos</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number" id="stat-visits">0</span>
+                        <span class="stat-label">Visitas</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-number">2023</span>
+                        <span class="stat-label">Inicio</span>
+                    </div>
+                </div>
             </div>
-            <h1 class="hero-title">
-                Hola, soy<br>
-                <span class="gradient-text">Limber Huaycho</span>
-            </h1>
-            <p class="hero-subtitle">Desarrollador Web Junior apasionado por crear experiencias digitales modernas, funcionales y visualmente atractivas.</p>
-            <div class="hero-buttons">
-                <a href="#proyectos" class="btn btn-primary">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                    Ver Proyectos
-                </a>
-                <a href="#contacto" class="btn btn-outline">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-                    Contacto
-                </a>
-            </div>
-            <div class="hero-social">
-                <a href="https://wa.me/59170000000" target="_blank" class="social-btn whatsapp" id="btn-whatsapp" title="WhatsApp">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                </a>
-                <a href="https://github.com/limberhuaycho" target="_blank" class="social-btn github" id="btn-github" title="GitHub">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                </a>
-                <a href="https://youtube.com/@limberhuaycho" target="_blank" class="social-btn youtube" id="btn-youtube" title="YouTube">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                </a>
+            <div class="hero-visual animate-on-scroll">
+                <div class="hero-image-wrapper">
+                    <div class="hero-image-bg"></div>
+                    <div class="hero-avatar">
+                        <i class="fas fa-user-astronaut"></i>
+                    </div>
+                    <div class="floating-icon floating-icon-1"><i class="fas fa-code"></i></div>
+                    <div class="floating-icon floating-icon-2"><i class="fas fa-laptop-code"></i></div>
+                    <div class="floating-icon floating-icon-3"><i class="fas fa-rocket"></i></div>
+                    <div class="floating-icon floating-icon-4"><i class="fas fa-cog"></i></div>
+                    <div class="floating-icon floating-icon-5"><i class="fas fa-database"></i></div>
+                    <div class="floating-icon floating-icon-6"><i class="fas fa-mobile-alt"></i></div>
+                </div>
             </div>
         </div>
-        <div class="hero-visual">
-            <div class="code-window">
-                <div class="code-header">
-                    <div class="code-dots">
-                        <span class="dot red"></span>
-                        <span class="dot yellow"></span>
-                        <span class="dot green"></span>
-                    </div>
-                    <span class="code-title">portfolio.js</span>
-                </div>
-                <div class="code-body">
-                    <pre><code><span class="code-keyword">const</span> <span class="code-var">developer</span> = {
-  <span class="code-prop">nombre</span>: <span class="code-string">"Limber Huaycho"</span>,
-  <span class="code-prop">rol</span>: <span class="code-string">"Web Developer"</span>,
-  <span class="code-prop">skills</span>: [
-    <span class="code-string">"HTML"</span>, <span class="code-string">"CSS"</span>,
-    <span class="code-string">"JavaScript"</span>,
-    <span class="code-string">"Firebase"</span>
-  ],
-  <span class="code-prop">pasion</span>: <span class="code-keyword">true</span>,
-  <span class="code-prop">cafes</span>: <span class="code-number">Infinity</span>
-};</code></pre>
-                </div>
-            </div>
+        <div class="hero-wave">
+            <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+                <path d="M0,60 C360,120 720,0 1080,60 C1260,90 1380,80 1440,70 L1440,120 L0,120 Z" fill="currentColor"/>
+            </svg>
         </div>
     </section>
 
-    <!-- About Section -->
-    <section class="section" id="sobre-mi">
+    <!-- Sobre Mí -->
+    <section class="about" id="sobre-mi">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Sobre Mí</span>
-                <h2 class="section-title">Conoce mi <span class="gradient-text">historia</span></h2>
+            <div class="section-header animate-on-scroll">
+                <span class="section-tag"><i class="fas fa-user"></i> Conóceme</span>
+                <h2 class="section-title">Sobre <span class="text-gradient">Mí</span></h2>
+                <div class="section-line"></div>
             </div>
             <div class="about-grid">
-                <div class="about-card glass-card">
-                    <div class="about-icon">🎯</div>
-                    <h3>Mi Objetivo</h3>
-                    <p>Crear soluciones web innovadoras que combinen diseño atractivo con funcionalidad robusta. Siempre aprendiendo nuevas tecnologías.</p>
+                <div class="about-card animate-on-scroll">
+                    <div class="about-card-icon"><i class="fas fa-graduation-cap"></i></div>
+                    <h3>Formación</h3>
+                    <p>Estudiante apasionado por la tecnología y el desarrollo de software. Constantemente aprendiendo nuevas tecnologías.</p>
                 </div>
-                <div class="about-card glass-card">
-                    <div class="about-icon">💡</div>
-                    <h3>Mi Enfoque</h3>
-                    <p>Desarrollo limpio, código mantenible y experiencias de usuario excepcionales. Cada proyecto es una oportunidad para crecer.</p>
+                <div class="about-card animate-on-scroll">
+                    <div class="about-card-icon"><i class="fas fa-heart"></i></div>
+                    <h3>Pasión</h3>
+                    <p>Me encanta crear soluciones digitales que resuelvan problemas reales. Desde apps móviles hasta juegos interactivos.</p>
                 </div>
-                <div class="about-card glass-card">
-                    <div class="about-icon">🚀</div>
-                    <h3>Mi Pasión</h3>
-                    <p>La tecnología me impulsa a innovar constantemente. Disfruto resolver problemas complejos con soluciones elegantes y eficientes.</p>
+                <div class="about-card animate-on-scroll">
+                    <div class="about-card-icon"><i class="fas fa-bullseye"></i></div>
+                    <h3>Objetivo</h3>
+                    <p>Convertirme en un desarrollador full-stack capaz de crear productos digitales completos y de alta calidad.</p>
+                </div>
+            </div>
+            <div class="skills-section animate-on-scroll">
+                <h3 class="skills-title">Tecnologías que manejo</h3>
+                <div class="skills-grid">
+                    <div class="skill-chip"><i class="fab fa-html5"></i> HTML5</div>
+                    <div class="skill-chip"><i class="fab fa-css3-alt"></i> CSS3</div>
+                    <div class="skill-chip"><i class="fab fa-js"></i> JavaScript</div>
+                    <div class="skill-chip"><i class="fab fa-flutter"></i> Flutter</div>
+                    <div class="skill-chip"><i class="fas fa-fire"></i> Firebase</div>
+                    <div class="skill-chip"><i class="fab fa-git-alt"></i> Git</div>
+                    <div class="skill-chip"><i class="fab fa-python"></i> Python</div>
+                    <div class="skill-chip"><i class="fas fa-database"></i> SQL</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Skills Section -->
-    <section class="section section-dark" id="habilidades">
+    <!-- Servicios -->
+    <section class="services" id="servicios">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Habilidades</span>
-                <h2 class="section-title">Mi <span class="gradient-text">stack tecnológico</span></h2>
+            <div class="section-header animate-on-scroll">
+                <span class="section-tag"><i class="fas fa-briefcase"></i> Lo que hago</span>
+                <h2 class="section-title">Mis <span class="text-gradient">Servicios</span></h2>
+                <div class="section-line"></div>
             </div>
-            <div class="skills-grid">
-                <div class="skill-card glass-card">
-                    <div class="skill-icon" style="--skill-color: #e34f26;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="#e34f26"><path d="M1.5 0h21l-1.91 21.563L11.977 24l-8.564-2.438L1.5 0zm7.031 9.75l-.232-2.718 10.059.003.076-.757.076-.771.076-.758H6.792l.061-.545.227 2.487-.308 3.06h7.907l-.332 3.795-2.325.63-2.373-.63-.166-1.744h-2.54l.274 3.49 4.825 1.346 4.745-1.346.641-7.754H8.531z"/></svg>
+            <div class="services-grid">
+                <div class="service-card animate-on-scroll">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon"><i class="fas fa-mobile-alt"></i></div>
                     </div>
-                    <h4>HTML5</h4>
-                    <div class="skill-bar"><div class="skill-fill" style="--fill: 90%;"></div></div>
+                    <h3>Apps Móviles</h3>
+                    <p>Desarrollo de aplicaciones móviles multiplataforma con Flutter y Dart.</p>
+                    <div class="service-tags">
+                        <span>Flutter</span><span>Dart</span><span>Firebase</span>
+                    </div>
                 </div>
-                <div class="skill-card glass-card">
-                    <div class="skill-icon" style="--skill-color: #1572b6;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="#1572b6"><path d="M1.5 0h21l-1.91 21.563L11.977 24l-8.565-2.438L1.5 0zm17.09 4.413L5.41 4.41l.213 2.622 10.125.002-.255 2.716h-6.64l.24 2.573h6.182l-.366 3.523-2.91.804-2.956-.81-.188-2.11h-2.61l.29 3.855L12 19.002l5.355-1.12.93-13.469z"/></svg>
+                <div class="service-card animate-on-scroll">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon"><i class="fas fa-globe"></i></div>
                     </div>
-                    <h4>CSS3</h4>
-                    <div class="skill-bar"><div class="skill-fill" style="--fill: 85%;"></div></div>
+                    <h3>Sitios Web</h3>
+                    <p>Páginas web modernas, responsivas y optimizadas con las últimas tecnologías.</p>
+                    <div class="service-tags">
+                        <span>HTML</span><span>CSS</span><span>JavaScript</span>
+                    </div>
                 </div>
-                <div class="skill-card glass-card">
-                    <div class="skill-icon" style="--skill-color: #f7df1e;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="#f7df1e"><path d="M0 0h24v24H0V0zm22.034 18.276c-.175-1.095-.888-2.015-3.003-2.873-.736-.345-1.554-.585-1.797-1.14-.091-.33-.105-.51-.046-.705.15-.646.915-.84 1.515-.66.39.12.75.42.976.9 1.034-.676 1.034-.676 1.755-1.125-.27-.42-.405-.6-.586-.78-.63-.705-1.469-1.065-2.834-1.034l-.705.089c-.676.165-1.32.525-1.71 1.005-1.14 1.291-.811 3.541.569 4.471 1.365 1.02 3.361 1.244 3.616 2.205.24 1.17-.87 1.545-1.966 1.41-.811-.18-1.26-.586-1.755-1.336l-1.83 1.051c.21.48.45.689.81 1.109 1.74 1.756 6.09 1.666 6.871-1.004.029-.09.24-.705.074-1.65l.046.067zm-8.983-7.245h-2.248c0 1.938-.009 3.864-.009 5.805 0 1.232.063 2.363-.138 2.711-.33.689-1.18.601-1.566.48-.396-.196-.597-.466-.83-.855-.063-.105-.11-.196-.127-.196l-1.825 1.125c.305.63.75 1.172 1.324 1.517.855.51 2.004.675 3.207.405.783-.226 1.458-.691 1.811-1.411.51-.93.402-2.07.397-3.346.012-2.054 0-4.109 0-6.179l.004-.056z"/></svg>
+                <div class="service-card animate-on-scroll">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon"><i class="fas fa-gamepad"></i></div>
                     </div>
-                    <h4>JavaScript</h4>
-                    <div class="skill-bar"><div class="skill-fill" style="--fill: 80%;"></div></div>
+                    <h3>Juegos</h3>
+                    <p>Creación de juegos interactivos y divertidos para dispositivos móviles.</p>
+                    <div class="service-tags">
+                        <span>Unity</span><span>Flutter</span><span>Canvas</span>
+                    </div>
                 </div>
-                <div class="skill-card glass-card">
-                    <div class="skill-icon" style="--skill-color: #ffca28;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="#ffca28"><path d="M3.89 15.672L6.255.461A.542.542 0 017.27.288l2.543 4.771-3.174 10.613zm16.794 3.692l-2.25-14a.54.54 0 00-.919-.295L3.316 19.365l7.856 4.427a1.621 1.621 0 001.588 0zM14.3 7.147l-1.82-3.482a.542.542 0 00-.96 0L3.53 17.984z"/></svg>
+                <div class="service-card animate-on-scroll">
+                    <div class="service-icon-wrapper">
+                        <div class="service-icon"><i class="fas fa-paint-brush"></i></div>
                     </div>
-                    <h4>Firebase</h4>
-                    <div class="skill-bar"><div class="skill-fill" style="--fill: 75%;"></div></div>
-                </div>
-                <div class="skill-card glass-card">
-                    <div class="skill-icon" style="--skill-color: #764abc;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="#764abc"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+                    <h3>Diseño UI/UX</h3>
+                    <p>Interfaces intuitivas y atractivas centradas en la experiencia del usuario.</p>
+                    <div class="service-tags">
+                        <span>Figma</span><span>Adobe XD</span><span>CSS</span>
                     </div>
-                    <h4>Git & GitHub</h4>
-                    <div class="skill-bar"><div class="skill-fill" style="--fill: 70%;"></div></div>
-                </div>
-                <div class="skill-card glass-card">
-                    <div class="skill-icon" style="--skill-color: #00d8ff;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="#00d8ff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-                    </div>
-                    <h4>Responsive Design</h4>
-                    <div class="skill-bar"><div class="skill-fill" style="--fill: 88%;"></div></div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Projects Section -->
-    <section class="section" id="proyectos">
+    <!-- Proyectos -->
+    <section class="projects" id="proyectos">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Portafolio</span>
-                <h2 class="section-title">Mis <span class="gradient-text">Proyectos</span></h2>
-                <p class="section-desc">Explora mis trabajos más recientes. Cada proyecto refleja mi compromiso con la calidad y la innovación.</p>
+            <div class="section-header animate-on-scroll">
+                <span class="section-tag"><i class="fas fa-folder-open"></i> Portafolio</span>
+                <h2 class="section-title">Mis <span class="text-gradient">Proyectos</span></h2>
+                <div class="section-line"></div>
+                <p class="section-description">Aquí puedes ver algunos de los proyectos en los que he trabajado</p>
             </div>
-            <div class="projects-grid" id="projectsGrid">
-                <!-- Projects loaded dynamically from Firebase -->
+            <div class="projects-grid" id="projects-grid">
+                <!-- Los proyectos se cargan dinámicamente desde Firebase -->
+                <div class="projects-loader" id="projects-loader">
+                    <div class="loader-spinner"></div>
+                    <p>Cargando proyectos...</p>
+                </div>
             </div>
-            <div class="projects-empty" id="projectsEmpty" style="display:none;">
-                <div class="empty-icon">📂</div>
-                <p>Próximamente nuevos proyectos...</p>
+            <div class="projects-empty" id="projects-empty" style="display:none;">
+                <i class="fas fa-folder-open"></i>
+                <p>Próximamente se agregarán proyectos</p>
             </div>
         </div>
     </section>
 
-    <!-- Contact Section -->
-    <section class="section section-dark" id="contacto">
+    <!-- Contacto -->
+    <section class="contact" id="contacto">
         <div class="container">
-            <div class="section-header">
-                <span class="section-tag">Contacto</span>
-                <h2 class="section-title">¿Trabajamos <span class="gradient-text">juntos</span>?</h2>
-                <p class="section-desc">Estoy abierto a nuevas oportunidades y colaboraciones. ¡No dudes en contactarme!</p>
+            <div class="section-header animate-on-scroll">
+                <span class="section-tag"><i class="fas fa-envelope"></i> Hablemos</span>
+                <h2 class="section-title">Ponte en <span class="text-gradient">Contacto</span></h2>
+                <div class="section-line"></div>
             </div>
             <div class="contact-grid">
-                <form class="contact-form glass-card" id="contactForm">
-                    <div class="form-group">
-                        <label for="name">Nombre</label>
-                        <input type="text" id="name" placeholder="Tu nombre" required>
+                <div class="contact-info animate-on-scroll">
+                    <h3>¿Tienes un proyecto en mente?</h3>
+                    <p>No dudes en contactarme. Estoy disponible para proyectos freelance y colaboraciones.</p>
+                    <div class="contact-methods">
+                        <a href="https://wa.me/59173265343" target="_blank" class="contact-method" id="contact-whatsapp">
+                            <div class="contact-method-icon whatsapp"><i class="fab fa-whatsapp"></i></div>
+                            <div>
+                                <strong>WhatsApp</strong>
+                                <span>+591 73265343</span>
+                            </div>
+                        </a>
+                        <a href="https://github.com/limberhuaycho" target="_blank" class="contact-method" id="contact-github">
+                            <div class="contact-method-icon github"><i class="fab fa-github"></i></div>
+                            <div>
+                                <strong>GitHub</strong>
+                                <span>@limberhuaycho</span>
+                            </div>
+                        </a>
+                        <a href="https://youtube.com/@limberhuaycho" target="_blank" class="contact-method" id="contact-youtube">
+                            <div class="contact-method-icon youtube"><i class="fab fa-youtube"></i></div>
+                            <div>
+                                <strong>YouTube</strong>
+                                <span>@limberhuaycho</span>
+                            </div>
+                        </a>
+                        <a href="mailto:limber@email.com" class="contact-method">
+                            <div class="contact-method-icon email"><i class="fas fa-envelope"></i></div>
+                            <div>
+                                <strong>Email</strong>
+                                <span>limber@email.com</span>
+                            </div>
+                        </a>
                     </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" placeholder="tu@email.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="message">Mensaje</label>
-                        <textarea id="message" rows="5" placeholder="Escribe tu mensaje..." required></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-full">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                        Enviar Mensaje
-                    </button>
-                </form>
-                <div class="contact-info">
-                    <div class="contact-card glass-card">
-                        <div class="contact-icon">📧</div>
-                        <h4>Email</h4>
-                        <p>limber@email.com</p>
-                    </div>
-                    <div class="contact-card glass-card">
-                        <div class="contact-icon">📍</div>
-                        <h4>Ubicación</h4>
-                        <p>Bolivia</p>
-                    </div>
-                    <div class="contact-card glass-card">
-                        <div class="contact-icon">💼</div>
-                        <h4>Disponibilidad</h4>
-                        <p>Freelance / Tiempo completo</p>
-                    </div>
+                </div>
+                <div class="contact-form-wrapper animate-on-scroll">
+                    <form class="contact-form" id="contact-form">
+                        <div class="form-group">
+                            <label for="name"><i class="fas fa-user"></i> Nombre</label>
+                            <input type="text" id="name" placeholder="Tu nombre completo" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email"><i class="fas fa-envelope"></i> Email</label>
+                            <input type="email" id="email" placeholder="tu@email.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message"><i class="fas fa-comment"></i> Mensaje</label>
+                            <textarea id="message" rows="5" placeholder="Cuéntame sobre tu proyecto..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <i class="fas fa-paper-plane"></i> Enviar Mensaje
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -248,30 +294,36 @@
 
     <!-- Footer -->
     <footer class="footer">
+        <div class="footer-wave">
+            <svg viewBox="0 0 1440 120" preserveAspectRatio="none">
+                <path d="M0,40 C480,100 960,0 1440,60 L1440,0 L0,0 Z" fill="currentColor"/>
+            </svg>
+        </div>
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <div class="logo-icon">LH</div>
-                    <span>Limber<span class="logo-accent">>NML</span></span>
+                    <span class="logo-icon">LH</span>
+                    <span class="logo-text">Limber<span class="logo-accent">NML</span></span>
                 </div>
                 <div class="footer-links">
-                    <a href="#inicio">Inicio</a>
-                    <a href="#sobre-mi">Sobre Mí</a>
-                    <a href="#proyectos">Proyectos</a>
-                    <a href="#contacto">Contacto</a>
+                    <a href="https://wa.me/59173265343" target="_blank"><i class="fab fa-whatsapp"></i></a>
+                    <a href="https://github.com/limberhuaycho" target="_blank"><i class="fab fa-github"></i></a>
+                    <a href="https://youtube.com/@limberhuaycho" target="_blank"><i class="fab fa-youtube"></i></a>
                 </div>
-                <p class="footer-copy">&copy; 2025 Limber Huaycho. Todos los derechos reservados.</p>
+                <p class="footer-copy">&copy; 2026 Limber Huaycho. Todos los derechos reservados.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Admin Access (hidden) -->
-    <a href="privado.html" class="admin-access" title="Admin">⚙️</a>
+    <!-- Scroll to top -->
+    <button class="scroll-top" id="scrollTop" aria-label="Ir arriba">
+        <i class="fas fa-chevron-up"></i>
+    </button>
 
-    <!-- Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics-compat.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
