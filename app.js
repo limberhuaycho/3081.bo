@@ -1,268 +1,260 @@
-/* ============================================================
-   PORTAFOLIO LIMBER HUAYCHO - LÓGICA PÚBLICA
-   Firebase Firestore + Analytics + Interactividad
-   ============================================================ */
+// app.js — lógica del sitio público
 
-// Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyBFu8Jrd2YrBTMuikiuCnOj7dyHMugHx-0",
-  authDomain: "limber-rcl-3081.firebaseapp.com",
-  projectId: "limber-rcl-3081",
-  storageBucket: "limber-rcl-3081.firebasestorage.app",
-  messagingSenderId: "258409264111",
-  appId: "1:258409264111:web:08fa48d8bb10ab83c07c1a",
-  measurementId: "G-CVGEW1HQEZ"
+let TODOS_PROYECTOS = [];
+let TIPO_ACTUAL = "todos";
+let QR_ACTUAL = null; // { imagen, updatedAt } desde config/qr
+
+const grid = document.getElementById("grid");
+const vacio = document.getElementById("vacio");
+const buscador = document.getElementById("buscador");
+const tabsEl = document.getElementById("tabs");
+
+/* ---------- Utilidades de coincidencia de búsqueda ---------- */
+
+const PALABRAS_TIPO = {
+  pagina: ["pagina", "página", "web", "sitio", "landing", "tienda online", "portafolio"],
+  app: ["app", "aplicacion", "aplicación", "movil", "móvil", "android", "ios"],
+  programa: ["programa", "sistema", "software", "escritorio", "gestion", "gestión", "inventario"],
+  otro: ["otro", "bot", "automatizacion", "automatización", "script", "integracion", "integración"]
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+function normaliza(str) {
+  return (str || "").toString().toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
 
-// ---- DOM ELEMENTS ----
-const navbar = document.getElementById('navbar');
-const navToggle = document.getElementById('navToggle');
-const navMenu = document.getElementById('navMenu');
-const scrollTopBtn = document.getElementById('scrollTop');
-const projectsGrid = document.getElementById('projects-grid');
-const projectsLoader = document.getElementById('projects-loader');
-const projectsEmpty = document.getElementById('projects-empty');
+/** Adivina el tipo más probable a partir de un texto libre */
+function adivinarTipo(texto) {
+  const t = normaliza(texto);
+  let mejor = { tipo: null, puntos: 0 };
+  for (const [tipo, palabras] of Object.entries(PALABRAS_TIPO)) {
+    let puntos = 0;
+    palabras.forEach((p) => { if (t.includes(normaliza(p))) puntos++; });
+    if (puntos > mejor.puntos) mejor = { tipo, puntos };
+  }
+  return mejor.tipo;
+}
 
-// ---- NAVIGATION ----
-navToggle.addEventListener('click', () => {
-    navToggle.classList.toggle('active');
-    navMenu.classList.toggle('active');
+function coincide(proyecto, termino) {
+  if (!termino) return true;
+  const t = normaliza(termino);
+  const campos = normaliza(proyecto.nombre + " " + proyecto.descripcion);
+  if (campos.includes(t)) return true;
+  // si no hay coincidencia directa, intenta por tipo adivinado
+  const tipoAdivinado = adivinarTipo(termino);
+  return tipoAdivinado && tipoAdivinado === proyecto.tipo;
+}
+
+/* ---------- Carga de datos ---------- */
+
+async function cargarProyectos() {
+  const snap = await db.collection("projects").orderBy("createdAt", "desc").get();
+  TODOS_PROYECTOS = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  render();
+}
+
+async function cargarConfigQR() {
+  try {
+    const doc = await db.collection("config").doc("qr").get();
+    QR_ACTUAL = doc.exists ? doc.data() : null;
+  } catch (e) { QR_ACTUAL = null; }
+}
+
+/* ---------- Render del catálogo ---------- */
+
+function render() {
+  const termino = buscador.value.trim();
+  let lista = TODOS_PROYECTOS.filter((p) => TIPO_ACTUAL === "todos" || p.tipo === TIPO_ACTUAL);
+  if (termino) lista = lista.filter((p) => coincide(p, termino));
+
+  grid.innerHTML = "";
+  vacio.classList.toggle("hidden", lista.length > 0);
+
+  lista.forEach((p) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="card-img">
+        ${p.imagen ? `<img src="${p.imagen}" alt="${escapeHtml(p.nombre)}" loading="lazy">` : `<span class="placeholder">3081</span>`}
+      </div>
+      <div class="card-body">
+        <span class="card-tag">${ETIQUETAS_TIPO[p.tipo] || p.tipo}</span>
+        <span class="card-title">${escapeHtml(p.nombre)}</span>
+        <p class="card-desc">${escapeHtml(p.descripcion || "")}</p>
+        <div class="card-foot">
+          <span class="card-price ${p.precio ? "" : "custom"}">${p.precio ? "Bs " + p.precio : "A cotizar"}</span>
+          <span class="mono" style="font-size:0.75rem;color:var(--text-dim)">ver más →</span>
+        </div>
+      </div>
+    `;
+    card.addEventListener("click", () => abrirModal(p));
+    grid.appendChild(card);
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str || "";
+  return div.innerHTML;
+}
+
+tabsEl.addEventListener("click", (e) => {
+  const btn = e.target.closest(".tab");
+  if (!btn) return;
+  tabsEl.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+  btn.classList.add("active");
+  TIPO_ACTUAL = btn.dataset.tipo;
+  render();
 });
 
-document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', () => {
-        navToggle.classList.remove('active');
-        navMenu.classList.remove('active');
-    });
+let debounce;
+buscador.addEventListener("input", () => {
+  clearTimeout(debounce);
+  debounce = setTimeout(render, 180);
 });
 
-// Navbar scroll effect
-let lastScroll = 0;
-window.addEventListener('scroll', () => {
-    const scrollY = window.scrollY;
-    navbar.classList.toggle('scrolled', scrollY > 50);
-    scrollTopBtn.classList.toggle('visible', scrollY > 400);
+/* ---------- Modal de proyecto ---------- */
 
-    // Active nav link
-    document.querySelectorAll('section[id]').forEach(section => {
-        const top = section.offsetTop - 100;
-        const height = section.offsetHeight;
-        const id = section.getAttribute('id');
-        const link = document.querySelector(`.nav-link[href="#${id}"]`);
-        if (link) {
-            link.classList.toggle('active', scrollY >= top && scrollY < top + height);
-        }
-    });
+const modal = document.getElementById("modal-proyecto");
+const modalBody = document.getElementById("modal-body");
 
-    lastScroll = scrollY;
+function abrirModal(p) {
+  modalBody.innerHTML = `
+    ${p.imagen ? `<img class="modal-img" src="${p.imagen}" alt="${escapeHtml(p.nombre)}">` : ""}
+    <span class="card-tag">${ETIQUETAS_TIPO[p.tipo] || p.tipo}</span>
+    <h3>${escapeHtml(p.nombre)}</h3>
+    <p>${escapeHtml(p.descripcion || "")}</p>
+    <p class="card-price">${p.precio ? "Bs " + p.precio : "Precio a cotizar contigo"}</p>
+    ${p.link ? `<p style="margin-bottom:14px"><a href="${p.link}" target="_blank" rel="noopener" style="color:var(--teal)">Ver enlace / demo →</a></p>` : ""}
+    <button class="btn btn-primary btn-block" id="modal-pedir">Hacer pedido de esto</button>
+  `;
+  modal.classList.remove("hidden");
+  document.getElementById("modal-pedir").addEventListener("click", () => {
+    modal.classList.add("hidden");
+    precargarFormulario(p);
+  });
+}
+
+document.getElementById("modal-close").addEventListener("click", () => modal.classList.add("hidden"));
+modal.addEventListener("click", (e) => { if (e.target === modal) modal.classList.add("hidden"); });
+
+function precargarFormulario(p) {
+  document.getElementById("proyecto-ref").value = p.id;
+  document.getElementById("p-tipo").value = p.tipo;
+  document.getElementById("p-titulo").value = p.nombre;
+  document.getElementById("p-desc").value = `Quiero algo parecido a "${p.nombre}"`;
+  const info = document.getElementById("precio-info");
+  info.textContent = p.precio ? `Este trabajo tiene un precio de referencia de Bs ${p.precio}.` : "Este trabajo se cotiza según lo que necesites.";
+  info.classList.remove("hidden");
+  document.getElementById("pedir").scrollIntoView({ behavior: "smooth" });
+}
+
+/* ---------- Envío de pedido ---------- */
+
+const formPedido = document.getElementById("form-pedido");
+
+formPedido.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const btn = formPedido.querySelector("button[type=submit]");
+  btn.disabled = true; btn.textContent = "Enviando…";
+
+  try {
+    const proyectoId = document.getElementById("proyecto-ref").value || null;
+    const proyecto = proyectoId ? TODOS_PROYECTOS.find((p) => p.id === proyectoId) : null;
+    const token = generarToken();
+    const tieneQR = !!(QR_ACTUAL && QR_ACTUAL.imagen);
+
+    const pedido = {
+      token,
+      clienteNombre: document.getElementById("p-nombre").value.trim(),
+      contacto: document.getElementById("p-contacto").value.trim(),
+      tipo: document.getElementById("p-tipo").value,
+      titulo: document.getElementById("p-titulo").value.trim(),
+      descripcion: document.getElementById("p-desc").value.trim(),
+      proyectoId: proyectoId,
+      precioReferencia: proyecto ? (proyecto.precio || null) : null,
+      estado: tieneQR ? "pendiente_pago" : "congelado",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    await db.collection("pedidos").add(pedido);
+    mostrarResultado(document.getElementById("resultado-pedido"), { ...pedido, createdAtLocal: new Date() });
+    formPedido.reset();
+    document.getElementById("proyecto-ref").value = "";
+    document.getElementById("precio-info").classList.add("hidden");
+  } catch (err) {
+    alert("No pudimos enviar tu pedido. Intenta de nuevo. " + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = "Enviar pedido";
+  }
 });
 
-// Scroll to top
-scrollTopBtn.addEventListener('click', () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-});
+function mostrarResultado(contenedor, pedido) {
+  const estado = ESTADOS_PEDIDO[pedido.estado] || { label: pedido.estado, clase: "" };
+  let extra = "";
 
-// ---- SCROLL ANIMATIONS ----
-const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry, index) => {
-        if (entry.isIntersecting) {
-            setTimeout(() => {
-                entry.target.classList.add('visible');
-            }, index * 100);
-            observer.unobserve(entry.target);
-        }
-    });
-}, observerOptions);
+  if (pedido.estado === "congelado") {
+    extra = `<p style="color:var(--text-dim); font-size:0.9rem">Aún no hay un QR de pago disponible. Tu pedido queda congelado y te avisaremos por WhatsApp/correo apenas puedas pagar. Si pasan más de 5 días sin actividad, el pedido se elimina automáticamente.</p>`;
+  } else if (pedido.estado === "pendiente_pago" && QR_ACTUAL && QR_ACTUAL.imagen) {
+    extra = `
+      <p style="font-size:0.9rem; color:var(--text-dim); margin-bottom:6px">Escanea o descarga el QR para pagar:</p>
+      <img class="qr" src="${QR_ACTUAL.imagen}" alt="QR de pago">
+      <a class="btn btn-ghost" href="${QR_ACTUAL.imagen}" download="qr-pago-3081.jpg">Descargar QR</a>
+    `;
+  } else if (pedido.estado === "verificado") {
+    extra = `<p style="color:var(--teal); font-size:0.9rem">Tu pago fue verificado. Guarda tu token, lo necesitarás como comprobante.</p>`;
+  } else if (pedido.estado === "finalizado") {
+    extra = `<p style="color:var(--teal); font-size:0.9rem">Este pedido ya fue entregado y cerrado. ¡Gracias por confiar en 3081.bo!</p>`;
+  } else if (pedido.estado === "rechazado") {
+    extra = `<p style="color:var(--red); font-size:0.9rem">Tu pago no pudo verificarse. Contáctanos por WhatsApp con tu token.</p>`;
+  }
 
-document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+  contenedor.innerHTML = `
+    <p style="font-size:0.85rem;color:var(--text-dim)">Tu código de seguimiento</p>
+    <p class="resultado-token">${pedido.token}</p>
+    <span class="resultado-estado ${estado.clase}">${estado.label}</span>
+    ${extra}
+    <div class="resultado-acciones">
+      <a class="btn btn-whatsapp" target="_blank" rel="noopener"
+         href="${linkWhatsApp(WHATSAPP_NUMERO, `Hola, mi token de pedido es ${pedido.token} (${pedido.titulo || ""})`)}">
+         Enviar token por WhatsApp
+      </a>
+    </div>
+  `;
+  contenedor.classList.remove("hidden");
+}
 
-// ---- VISIT COUNTER ----
-async function trackVisit() {
-    try {
-        const statsRef = db.collection('stats').doc('general');
-        const doc = await statsRef.get();
-        if (doc.exists) {
-            await statsRef.update({
-                totalVisits: firebase.firestore.FieldValue.increment(1)
-            });
-            const visits = doc.data().totalVisits + 1;
-            const el = document.getElementById('stat-visits');
-            if (el) animateCounter(el, visits);
-        } else {
-            await statsRef.set({
-                totalVisits: 1,
-                clicks: { whatsapp: 0, github: 0, youtube: 0 }
-            });
-            const el = document.getElementById('stat-visits');
-            if (el) el.textContent = '1';
-        }
-    } catch (e) {
-        console.log('Stats:', e.message);
+/* ---------- Seguimiento por token ---------- */
+
+document.getElementById("track-btn").addEventListener("click", async () => {
+  const input = document.getElementById("track-token");
+  const token = input.value.trim().toUpperCase();
+  const resultado = document.getElementById("track-resultado");
+  if (!token) return;
+
+  resultado.classList.remove("hidden");
+  resultado.innerHTML = `<p style="color:var(--text-dim)">Buscando…</p>`;
+
+  try {
+    const snap = await db.collection("pedidos").where("token", "==", token).limit(1).get();
+    if (snap.empty) {
+      resultado.innerHTML = `<p style="color:var(--red)">No encontramos ese token. Revisa que esté bien escrito.</p>`;
+      return;
     }
-}
-
-function animateCounter(element, target) {
-    let current = 0;
-    const step = Math.ceil(target / 40);
-    const interval = setInterval(() => {
-        current += step;
-        if (current >= target) {
-            current = target;
-            clearInterval(interval);
-        }
-        element.textContent = current.toLocaleString();
-    }, 30);
-}
-
-// ---- CLICK TRACKING ----
-async function trackClick(type) {
-    try {
-        const statsRef = db.collection('stats').doc('general');
-        await statsRef.update({
-            [`clicks.${type}`]: firebase.firestore.FieldValue.increment(1)
-        });
-    } catch (e) {
-        console.log('Click track:', e.message);
-    }
-}
-
-// Track social buttons
-document.querySelectorAll('[id^="btn-"], [id^="contact-"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-        const id = btn.id;
-        if (id.includes('whatsapp')) trackClick('whatsapp');
-        else if (id.includes('github')) trackClick('github');
-        else if (id.includes('youtube')) trackClick('youtube');
-    });
+    const pedido = snap.docs[0].data();
+    mostrarResultado(resultado, pedido);
+  } catch (err) {
+    resultado.innerHTML = `<p style="color:var(--red)">Error al consultar: ${err.message}</p>`;
+  }
 });
 
-// ---- LOAD PROJECTS ----
-const gradients = ['gradient-1', 'gradient-2', 'gradient-3', 'gradient-4', 'gradient-5'];
-const icons = ['fa-shopping-cart', 'fa-gamepad', 'fa-store', 'fa-code', 'fa-mobile-alt', 'fa-globe'];
+/* ---------- Contacto general ---------- */
 
-async function loadProjects() {
-    try {
-        const snapshot = await db.collection('projects').orderBy('createdAt', 'desc').get();
-        
-        projectsLoader.style.display = 'none';
+document.getElementById("wa-contacto").href = linkWhatsApp(WHATSAPP_NUMERO, "Hola, quisiera hacer una consulta sobre 3081.bo");
 
-        if (snapshot.empty) {
-            projectsEmpty.style.display = 'block';
-            const el = document.getElementById('stat-projects');
-            if (el) el.textContent = '0';
-            return;
-        }
+/* ---------- Init ---------- */
 
-        const el = document.getElementById('stat-projects');
-        if (el) animateCounter(el, snapshot.size);
-
-        snapshot.forEach((doc, index) => {
-            const data = doc.data();
-            const gradientClass = gradients[index % gradients.length];
-            const iconClass = icons[index % icons.length];
-
-            const card = document.createElement('div');
-            card.className = 'project-card animate-on-scroll';
-
-            const imageHTML = data.image
-                ? `<img src="${data.image}" alt="${data.title}" class="project-card-image" loading="lazy">`
-                : `<div class="project-placeholder-img ${gradientClass}"><i class="fas ${iconClass}"></i></div>`;
-
-            card.innerHTML = `
-                <div class="project-card-image-wrapper">
-                    ${imageHTML}
-                    <span class="project-card-badge">Proyecto</span>
-                </div>
-                <div class="project-card-body">
-                    <h3>${escapeHTML(data.title || 'Sin título')}</h3>
-                    <p>${escapeHTML(data.description || 'Sin descripción')}</p>
-                    ${data.link ? `<a href="${escapeHTML(data.link)}" target="_blank" class="project-card-link" onclick="trackProjectClick('${doc.id}')"><i class="fas fa-external-link-alt"></i> Ver proyecto</a>` : ''}
-                    <div class="project-card-views"><i class="fas fa-eye"></i> <span>${data.views || 0} vistas</span></div>
-                </div>
-            `;
-
-            projectsGrid.appendChild(card);
-            // Re-observe for animation
-            setTimeout(() => observer.observe(card), 50);
-        });
-
-    } catch (e) {
-        console.error('Error loading projects:', e);
-        projectsLoader.innerHTML = '<p>Error al cargar proyectos</p>';
-    }
-}
-
-// Track project click
-async function trackProjectClick(projectId) {
-    try {
-        await db.collection('projects').doc(projectId).update({
-            views: firebase.firestore.FieldValue.increment(1)
-        });
-    } catch (e) {
-        console.log('Project click:', e.message);
-    }
-}
-
-// Make it global
-window.trackProjectClick = trackProjectClick;
-
-// ---- CONTACT FORM ---- 
-const contactForm = document.getElementById('contact-form');
-if (contactForm) {
-    contactForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const message = document.getElementById('message').value.trim();
-
-        if (!name || !email || !message) {
-            showToast('Por favor completa todos los campos', 'error');
-            return;
-        }
-
-        try {
-            await db.collection('messages').add({
-                name, email, message,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            showToast('¡Mensaje enviado correctamente!', 'success');
-            contactForm.reset();
-        } catch (e) {
-            showToast('Error al enviar el mensaje', 'error');
-        }
-    });
-}
-
-// ---- TOAST ----
-function showToast(msg, type = '') {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
-
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
-    document.body.appendChild(toast);
-
-    requestAnimationFrame(() => toast.classList.add('show'));
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-// ---- UTILITY ----
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-// ---- INIT ----
-document.addEventListener('DOMContentLoaded', () => {
-    trackVisit();
-    loadProjects();
-});
+(async function init() {
+  await Promise.all([cargarProyectos(), cargarConfigQR()]);
+})();

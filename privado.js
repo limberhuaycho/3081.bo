@@ -1,368 +1,356 @@
-/* ============================================================
-   PANEL ADMIN - LÓGICA PRIVADA
-   Firebase Auth (Google) + Firestore CRUD + Dashboard
-   ============================================================ */
+// privado.js — lógica del panel de administración
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBFu8Jrd2YrBTMuikiuCnOj7dyHMugHx-0",
-  authDomain: "limber-rcl-3081.firebaseapp.com",
-  projectId: "limber-rcl-3081",
-  storageBucket: "limber-rcl-3081.firebasestorage.app",
-  messagingSenderId: "258409264111",
-  appId: "1:258409264111:web:08fa48d8bb10ab83c07c1a",
-  measurementId: "G-CVGEW1HQEZ"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+const pantallaLogin = document.getElementById("pantalla-login");
+const panelAdmin = document.getElementById("panel-admin");
+const loginError = document.getElementById("login-error");
 
-// ---- DOM ----
-const loginScreen = document.getElementById('login-screen');
-const adminPanel = document.getElementById('admin-panel');
-const loginError = document.getElementById('login-error');
-const loginErrorText = document.getElementById('login-error-text');
+let PROYECTOS_CACHE = [];
+let PEDIDOS_CACHE = [];
 
-// ---- AUTH ----
-document.getElementById('btn-google-login').addEventListener('click', async () => {
-    try {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        await auth.signInWithPopup(provider);
-    } catch (e) {
-        showLoginError('Error al iniciar sesión: ' + e.message);
+/* ================= AUTH ================= */
+
+document.getElementById("btn-login").addEventListener("click", async () => {
+  loginError.classList.add("hidden");
+  const provider = new firebase.auth.GoogleAuthProvider();
+  try {
+    const result = await auth.signInWithPopup(provider);
+    if (result.user.email !== ADMIN_EMAIL) {
+      await auth.signOut();
+      loginError.textContent = "Esta cuenta no tiene acceso al panel de administración.";
+      loginError.classList.remove("hidden");
     }
+  } catch (err) {
+    loginError.textContent = "No se pudo iniciar sesión: " + err.message;
+    loginError.classList.remove("hidden");
+  }
 });
 
-auth.onAuthStateChanged(async (user) => {
-    if (user) {
-        const authorized = await checkAuthorization(user);
-        if (authorized) {
-            showAdmin(user);
-        } else {
-            showLoginError('Tu cuenta no está autorizada. Contacta al administrador.');
-            auth.signOut();
-        }
-    } else {
-        loginScreen.style.display = 'flex';
-        adminPanel.style.display = 'none';
-    }
+document.getElementById("btn-logout").addEventListener("click", () => auth.signOut());
+
+auth.onAuthStateChanged((user) => {
+  if (user && user.email === ADMIN_EMAIL) {
+    pantallaLogin.classList.add("hidden");
+    panelAdmin.classList.remove("hidden");
+    document.getElementById("admin-email").textContent = user.email;
+    iniciarPanel();
+  } else {
+    panelAdmin.classList.add("hidden");
+    pantallaLogin.classList.remove("hidden");
+  }
 });
 
-async function checkAuthorization(user) {
-    try {
-        // Check in privado collection by UID
-        const docRef = await db.collection('privado').doc(user.uid).get();
-        if (docRef.exists) return true;
+/* ================= TABS ================= */
 
-        // Also check by email field
-        const query = await db.collection('privado').where('email', '==', user.email).get();
-        if (!query.empty) return true;
+document.querySelectorAll(".admin-tab").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".admin-tab").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".admin-panel").forEach((p) => p.classList.add("hidden"));
+    btn.classList.add("active");
+    document.getElementById("panel-" + btn.dataset.panel).classList.remove("hidden");
+  });
+});
 
-        return false;
-    } catch (e) {
-        console.error('Auth check error:', e);
-        return false;
-    }
+/* ================= INIT ================= */
+
+let YA_INICIADO = false;
+async function iniciarPanel() {
+  if (YA_INICIADO) return;
+  YA_INICIADO = true;
+  await limpiezaAutomatica();
+  await Promise.all([cargarProyectosAdmin(), cargarPedidosAdmin(), cargarQR()]);
 }
 
-function showLoginError(msg) {
-    loginError.style.display = 'flex';
-    loginErrorText.textContent = msg;
-    setTimeout(() => { loginError.style.display = 'none'; }, 5000);
-}
-
-function showAdmin(user) {
-    loginScreen.style.display = 'none';
-    adminPanel.style.display = 'flex';
-
-    document.getElementById('sidebar-name').textContent = user.displayName || 'Admin';
-    document.getElementById('sidebar-email').textContent = user.email;
-    const avatar = document.getElementById('sidebar-avatar');
-    if (user.photoURL) {
-        avatar.src = user.photoURL;
-        avatar.style.display = 'block';
-    }
-
-    loadDashboard();
-    loadProjects();
-    loadMessages();
-    loadAuthorizedUsers();
-}
-
-document.getElementById('btn-logout').addEventListener('click', () => auth.signOut());
-
-// ---- SIDEBAR NAVIGATION ----
-const sidebar = document.getElementById('sidebar');
-const sidebarToggle = document.getElementById('sidebar-toggle');
-const sidebarClose = document.getElementById('sidebar-close');
-
-sidebarToggle.addEventListener('click', () => sidebar.classList.toggle('open'));
-sidebarClose.addEventListener('click', () => sidebar.classList.remove('open'));
-
-document.querySelectorAll('.sidebar-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const section = link.dataset.section;
-
-        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-
-        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-        document.getElementById(`section-${section}`).classList.add('active');
-
-        document.getElementById('top-bar-title').textContent = link.textContent.trim();
-        sidebar.classList.remove('open');
+/* ================= LIMPIEZA AUTOMÁTICA =================
+   - pedidos "congelado" con más de 5 días -> eliminar
+   - pedidos "finalizado" con más de 5 días -> eliminar
+*/
+async function limpiezaAutomatica() {
+  try {
+    const snap = await db.collection("pedidos").get();
+    const lote = db.batch();
+    let cambios = 0;
+    snap.forEach((doc) => {
+      const p = doc.data();
+      if (p.estado === "congelado" && diasDesde(p.createdAt) > DIAS_CONGELADO_LIMITE) {
+        lote.delete(doc.ref); cambios++;
+      } else if (p.estado === "finalizado" && diasDesde(p.updatedAt || p.createdAt) > DIAS_FINALIZADO_LIMITE) {
+        lote.delete(doc.ref); cambios++;
+      }
     });
+    if (cambios > 0) await lote.commit();
+  } catch (e) { console.warn("Limpieza automática falló:", e.message); }
+}
+
+/* ================= PROYECTOS ================= */
+
+const listaProyectos = document.getElementById("lista-proyectos");
+const modalProyecto = document.getElementById("modal-form-proyecto");
+const formProyecto = document.getElementById("form-proyecto");
+
+async function cargarProyectosAdmin() {
+  const snap = await db.collection("projects").orderBy("createdAt", "desc").get();
+  PROYECTOS_CACHE = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  renderProyectosAdmin();
+}
+
+function renderProyectosAdmin() {
+  listaProyectos.innerHTML = "";
+  if (PROYECTOS_CACHE.length === 0) {
+    listaProyectos.innerHTML = `<p class="admin-hint">Aún no hay proyectos cargados.</p>`;
+    return;
+  }
+  PROYECTOS_CACHE.forEach((p) => {
+    const row = document.createElement("div");
+    row.className = "admin-row";
+    row.innerHTML = `
+      <div class="admin-row-thumb">${p.imagen ? `<img src="${p.imagen}">` : "—"}</div>
+      <div class="admin-row-main">
+        <div class="admin-row-title">${escapeHtmlA(p.nombre)}</div>
+        <div class="admin-row-sub">${ETIQUETAS_TIPO[p.tipo] || p.tipo} · ${p.precio ? "Bs " + p.precio : "a cotizar"}</div>
+      </div>
+      <div class="admin-row-actions">
+        <button class="btn btn-sm btn-ghost" data-editar="${p.id}">Editar</button>
+      </div>
+    `;
+    listaProyectos.appendChild(row);
+  });
+  listaProyectos.querySelectorAll("[data-editar]").forEach((b) =>
+    b.addEventListener("click", () => abrirModalProyecto(PROYECTOS_CACHE.find((p) => p.id === b.dataset.editar)))
+  );
+}
+
+function escapeHtmlA(str) {
+  const div = document.createElement("div");
+  div.textContent = str || "";
+  return div.innerHTML;
+}
+
+document.getElementById("btn-nuevo-proyecto").addEventListener("click", () => abrirModalProyecto(null));
+document.getElementById("cerrar-modal-proyecto").addEventListener("click", () => modalProyecto.classList.add("hidden"));
+
+function abrirModalProyecto(p) {
+  document.getElementById("titulo-modal-proyecto").textContent = p ? "Editar proyecto" : "Nuevo proyecto";
+  document.getElementById("pr-id").value = p ? p.id : "";
+  document.getElementById("pr-tipo").value = p ? p.tipo : "pagina";
+  document.getElementById("pr-nombre").value = p ? p.nombre : "";
+  document.getElementById("pr-desc").value = p ? p.descripcion : "";
+  document.getElementById("pr-precio").value = p && p.precio ? p.precio : "";
+  document.getElementById("pr-link").value = p && p.link ? p.link : "";
+  document.getElementById("pr-imagen-file").value = "";
+  document.getElementById("pr-imagen-link").value = p && esLink(p.imagen) ? p.imagen : "";
+  const preview = document.getElementById("pr-imagen-preview");
+  if (p && p.imagen) {
+    preview.innerHTML = `<img src="${p.imagen}">`;
+    preview.classList.remove("hidden");
+  } else {
+    preview.classList.add("hidden");
+  }
+  document.getElementById("btn-eliminar-proyecto").classList.toggle("hidden", !p);
+  modalProyecto.classList.remove("hidden");
+}
+
+document.getElementById("pr-imagen-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const b64 = await imagenABase64(file);
+    const preview = document.getElementById("pr-imagen-preview");
+    preview.innerHTML = `<img src="${b64}">`;
+    preview.classList.remove("hidden");
+    preview.dataset.pendiente = b64;
+  } catch (err) { alert(err.message); e.target.value = ""; }
 });
 
-// ---- DASHBOARD ----
-async function loadDashboard() {
-    try {
-        const statsDoc = await db.collection('stats').doc('general').get();
-        if (statsDoc.exists) {
-            const data = statsDoc.data();
-            document.getElementById('dash-visits').textContent = (data.totalVisits || 0).toLocaleString();
-            const clicks = data.clicks || {};
-            document.getElementById('dash-whatsapp').textContent = (clicks.whatsapp || 0).toLocaleString();
-            document.getElementById('dash-github').textContent = (clicks.github || 0).toLocaleString();
-            document.getElementById('dash-youtube').textContent = (clicks.youtube || 0).toLocaleString();
+formProyecto.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const id = document.getElementById("pr-id").value;
+  const preview = document.getElementById("pr-imagen-preview");
+  const linkImg = document.getElementById("pr-imagen-link").value.trim();
+  let imagen = preview.dataset.pendiente || (linkImg || null) || (preview.querySelector("img") ? preview.querySelector("img").src : null);
+  if (linkImg) imagen = linkImg; // link explícito tiene prioridad si se llenó
 
-            renderChart(clicks);
-        }
+  const datos = {
+    tipo: document.getElementById("pr-tipo").value,
+    nombre: document.getElementById("pr-nombre").value.trim(),
+    descripcion: document.getElementById("pr-desc").value.trim(),
+    precio: document.getElementById("pr-precio").value ? Number(document.getElementById("pr-precio").value) : null,
+    link: document.getElementById("pr-link").value.trim() || null,
+    imagen: imagen || null,
+    views: 0,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
 
-        // Popular projects
-        const projects = await db.collection('projects').orderBy('views', 'desc').limit(5).get();
-        const container = document.getElementById('popular-projects');
-        container.innerHTML = '';
-        if (projects.empty) {
-            container.innerHTML = '<p class="no-data">Sin datos aún</p>';
-            return;
-        }
-        projects.forEach(doc => {
-            const d = doc.data();
-            container.innerHTML += `
-                <div class="popular-item">
-                    <span class="popular-name">${escapeHTML(d.title)}</span>
-                    <span class="popular-views"><i class="fas fa-eye"></i> ${d.views || 0}</span>
-                </div>
-            `;
-        });
-    } catch (e) {
-        console.error('Dashboard error:', e);
+  try {
+    if (id) {
+      await db.collection("projects").doc(id).update(datos);
+    } else {
+      datos.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+      await db.collection("projects").add(datos);
     }
-}
-
-function renderChart(clicks) {
-    const container = document.getElementById('chart-bars');
-    const items = [
-        { label: 'WhatsApp', value: clicks.whatsapp || 0, color: '#25d366' },
-        { label: 'GitHub', value: clicks.github || 0, color: '#333' },
-        { label: 'YouTube', value: clicks.youtube || 0, color: '#ff0000' }
-    ];
-    const max = Math.max(...items.map(i => i.value), 1);
-
-    container.innerHTML = items.map(item => `
-        <div class="bar-item">
-            <div class="bar-label">${item.label}</div>
-            <div class="bar-track">
-                <div class="bar-fill" style="width:${(item.value / max) * 100}%;background:${item.color};"></div>
-            </div>
-            <div class="bar-value">${item.value}</div>
-        </div>
-    `).join('');
-}
-
-// ---- PROJECTS CRUD ----
-let editingId = null;
-const modal = document.getElementById('project-modal');
-const projectForm = document.getElementById('project-form');
-
-document.getElementById('btn-add-project').addEventListener('click', () => {
-    editingId = null;
-    document.getElementById('modal-title').textContent = 'Nuevo Proyecto';
-    projectForm.reset();
-    modal.style.display = 'flex';
+    modalProyecto.classList.add("hidden");
+    delete preview.dataset.pendiente;
+    await cargarProyectosAdmin();
+  } catch (err) {
+    alert("Error al guardar: " + err.message);
+  }
 });
 
-document.getElementById('modal-close').addEventListener('click', () => modal.style.display = 'none');
-document.getElementById('btn-cancel').addEventListener('click', () => modal.style.display = 'none');
-modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-
-projectForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const data = {
-        title: document.getElementById('project-title').value.trim(),
-        description: document.getElementById('project-desc').value.trim(),
-        image: document.getElementById('project-image').value.trim(),
-        link: document.getElementById('project-link').value.trim(),
-    };
-
-    try {
-        if (editingId) {
-            await db.collection('projects').doc(editingId).update(data);
-            showToast('Proyecto actualizado');
-        } else {
-            data.views = 0;
-            data.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-            await db.collection('projects').add(data);
-            showToast('Proyecto creado');
-        }
-        modal.style.display = 'none';
-        loadProjects();
-        loadDashboard();
-    } catch (e) {
-        showToast('Error: ' + e.message, 'error');
-    }
+document.getElementById("btn-eliminar-proyecto").addEventListener("click", async () => {
+  const id = document.getElementById("pr-id").value;
+  if (!id || !confirm("¿Eliminar este proyecto definitivamente?")) return;
+  await db.collection("projects").doc(id).delete();
+  modalProyecto.classList.add("hidden");
+  await cargarProyectosAdmin();
 });
 
-async function loadProjects() {
-    const tbody = document.getElementById('projects-tbody');
-    const empty = document.getElementById('table-empty');
-    try {
-        const snapshot = await db.collection('projects').orderBy('createdAt', 'desc').get();
-        tbody.innerHTML = '';
-        if (snapshot.empty) {
-            empty.style.display = 'block';
-            return;
-        }
-        empty.style.display = 'none';
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>
-                    <div class="project-cell">
-                        ${d.image ? `<img src="${d.image}" class="project-thumb">` : '<div class="project-thumb-placeholder"><i class="fas fa-image"></i></div>'}
-                        <strong>${escapeHTML(d.title)}</strong>
-                    </div>
-                </td>
-                <td class="desc-cell">${escapeHTML(d.description || '').substring(0, 80)}...</td>
-                <td><span class="views-badge"><i class="fas fa-eye"></i> ${d.views || 0}</span></td>
-                <td>
-                    <div class="action-btns">
-                        <button class="btn-edit" onclick="editProject('${doc.id}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn-delete" onclick="deleteProject('${doc.id}', '${escapeHTML(d.title)}')"><i class="fas fa-trash"></i></button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    } catch (e) {
-        console.error('Load projects error:', e);
-    }
+/* ================= PEDIDOS ================= */
+
+const listaPedidos = document.getElementById("lista-pedidos");
+const filtroEstado = document.getElementById("filtro-estado");
+
+async function cargarPedidosAdmin() {
+  const snap = await db.collection("pedidos").orderBy("createdAt", "desc").get();
+  PEDIDOS_CACHE = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  renderPedidosAdmin();
+  actualizarResumen();
 }
 
-window.editProject = async function(id) {
-    try {
-        const doc = await db.collection('projects').doc(id).get();
-        if (!doc.exists) return;
-        const d = doc.data();
-        editingId = id;
-        document.getElementById('modal-title').textContent = 'Editar Proyecto';
-        document.getElementById('project-title').value = d.title || '';
-        document.getElementById('project-desc').value = d.description || '';
-        document.getElementById('project-image').value = d.image || '';
-        document.getElementById('project-link').value = d.link || '';
-        modal.style.display = 'flex';
-    } catch (e) {
-        showToast('Error al cargar proyecto', 'error');
-    }
-};
+filtroEstado.addEventListener("change", renderPedidosAdmin);
 
-window.deleteProject = async function(id, title) {
-    if (!confirm(`¿Eliminar "${title}"?`)) return;
-    try {
-        await db.collection('projects').doc(id).delete();
-        showToast('Proyecto eliminado');
-        loadProjects();
-        loadDashboard();
-    } catch (e) {
-        showToast('Error al eliminar', 'error');
-    }
-};
-
-// ---- MESSAGES ----
-async function loadMessages() {
-    const container = document.getElementById('messages-list');
-    const empty = document.getElementById('messages-empty');
-    try {
-        const snapshot = await db.collection('messages').orderBy('createdAt', 'desc').get();
-        container.innerHTML = '';
-        if (snapshot.empty) {
-            empty.style.display = 'block';
-            return;
-        }
-        empty.style.display = 'none';
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            const date = d.createdAt ? new Date(d.createdAt.seconds * 1000).toLocaleDateString('es') : 'Sin fecha';
-            container.innerHTML += `
-                <div class="message-card">
-                    <div class="message-header">
-                        <strong>${escapeHTML(d.name)}</strong>
-                        <span class="message-date">${date}</span>
-                    </div>
-                    <span class="message-email">${escapeHTML(d.email)}</span>
-                    <p>${escapeHTML(d.message)}</p>
-                    <button class="btn-delete-msg" onclick="deleteMessage('${doc.id}')"><i class="fas fa-trash"></i> Eliminar</button>
-                </div>
-            `;
-        });
-    } catch (e) {
-        console.error('Messages error:', e);
-    }
+function renderPedidosAdmin() {
+  const filtro = filtroEstado.value;
+  const lista = PEDIDOS_CACHE.filter((p) => filtro === "todos" || p.estado === filtro);
+  listaPedidos.innerHTML = "";
+  if (lista.length === 0) {
+    listaPedidos.innerHTML = `<p class="admin-hint">No hay pedidos en este filtro.</p>`;
+    return;
+  }
+  lista.forEach((p) => {
+    const estado = ESTADOS_PEDIDO[p.estado] || { label: p.estado, clase: "" };
+    const row = document.createElement("div");
+    row.className = "admin-row";
+    row.innerHTML = `
+      <div class="admin-row-main">
+        <div class="admin-row-title">${escapeHtmlA(p.titulo)} <span class="resultado-estado ${estado.clase}" style="margin-left:8px">${estado.label}</span></div>
+        <div class="admin-row-sub">${escapeHtmlA(p.clienteNombre)} · ${escapeHtmlA(p.contacto)} · ${ETIQUETAS_TIPO[p.tipo] || p.tipo}</div>
+        <div class="admin-row-token">${p.token}</div>
+      </div>
+      <div class="admin-row-actions" data-acciones></div>
+    `;
+    const acciones = row.querySelector("[data-acciones]");
+    acciones.appendChild(botonesPedido(p));
+    listaPedidos.appendChild(row);
+  });
 }
 
-window.deleteMessage = async function(id) {
-    if (!confirm('¿Eliminar este mensaje?')) return;
-    try {
-        await db.collection('messages').doc(id).delete();
-        showToast('Mensaje eliminado');
-        loadMessages();
-    } catch (e) {
-        showToast('Error', 'error');
-    }
-};
+function botonesPedido(p) {
+  const cont = document.createElement("div");
+  cont.className = "admin-row-actions";
 
-// ---- AUTHORIZED USERS ----
-async function loadAuthorizedUsers() {
-    const container = document.getElementById('auth-users-list');
-    try {
-        const snapshot = await db.collection('privado').get();
-        container.innerHTML = '';
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            container.innerHTML += `
-                <div class="auth-user-item">
-                    <i class="fas fa-user-check"></i>
-                    <div>
-                        <strong>${escapeHTML(d.displayName || 'Sin nombre')}</strong>
-                        <span>${escapeHTML(d.email || doc.id)}</span>
-                    </div>
-                </div>
-            `;
-        });
-        if (snapshot.empty) {
-            container.innerHTML = '<p class="no-data">No hay usuarios autorizados. Agrega un documento en la colección "privado" con el UID del usuario como ID.</p>';
-        }
-    } catch (e) {
-        container.innerHTML = '<p class="no-data">Error al cargar usuarios</p>';
-    }
+  const boton = (texto, clase, onClick) => {
+    const b = document.createElement("button");
+    b.className = "btn btn-sm " + clase;
+    b.textContent = texto;
+    b.addEventListener("click", onClick);
+    return b;
+  };
+
+  if (["congelado", "pendiente_pago", "en_revision"].includes(p.estado)) {
+    cont.appendChild(boton("Verificar", "btn-teal", () => actualizarPedido(p.id, "verificado")));
+    cont.appendChild(boton("Observación", "btn-violet", () => actualizarPedido(p.id, "observacion")));
+    cont.appendChild(boton("Rechazar", "btn-red", () => actualizarPedido(p.id, "rechazado")));
+  }
+  if (p.estado === "observacion") {
+    cont.appendChild(boton("Marcar verificado", "btn-teal", () => actualizarPedido(p.id, "verificado")));
+    cont.appendChild(boton("Rechazar", "btn-red", () => actualizarPedido(p.id, "rechazado")));
+  }
+  if (p.estado === "rechazado") {
+    cont.appendChild(boton("Reabrir", "btn-ghost", () => actualizarPedido(p.id, "pendiente_pago")));
+  }
+  if (p.estado === "verificado") {
+    cont.appendChild(boton("Finalizar pedido", "btn-teal", () => actualizarPedido(p.id, "finalizado")));
+    cont.appendChild(boton("WhatsApp cliente", "btn-ghost", () => window.open(
+      linkWhatsApp(soloNumeros(p.contacto) || WHATSAPP_NUMERO, `Hola ${p.clienteNombre}, tu pedido (token ${p.token}) fue verificado.`), "_blank"
+    )));
+  }
+  if (p.estado === "finalizado") {
+    cont.appendChild(boton("Eliminar ahora", "btn-red", () => eliminarPedido(p.id)));
+  }
+  if (p.estado === "congelado") {
+    cont.appendChild(boton("Eliminar", "btn-red", () => eliminarPedido(p.id)));
+  }
+  return cont;
 }
 
-// ---- TOAST ----
-function showToast(msg, type = 'success') {
-    const existing = document.querySelector('.toast');
-    if (existing) existing.remove();
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${msg}`;
-    document.body.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('show'));
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
+function soloNumeros(str) {
+  const n = (str || "").replace(/\D/g, "");
+  return n.length >= 8 ? n : null;
 }
 
-function escapeHTML(str) {
-    const div = document.createElement('div');
-    div.textContent = str || '';
-    return div.innerHTML;
+async function actualizarPedido(id, nuevoEstado) {
+  await db.collection("pedidos").doc(id).update({
+    estado: nuevoEstado,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  await cargarPedidosAdmin();
 }
+
+async function eliminarPedido(id) {
+  if (!confirm("¿Eliminar este pedido y su token definitivamente?")) return;
+  await db.collection("pedidos").doc(id).delete();
+  await cargarPedidosAdmin();
+}
+
+function actualizarResumen() {
+  const activos = PEDIDOS_CACHE.filter((p) => ["congelado", "pendiente_pago", "en_revision", "observacion"].includes(p.estado)).length;
+  const verificados = PEDIDOS_CACHE.filter((p) => p.estado === "verificado").length;
+  const rechazados = PEDIDOS_CACHE.filter((p) => p.estado === "rechazado").length;
+  const usados = PEDIDOS_CACHE.filter((p) => p.estado === "finalizado").length;
+  document.getElementById("n-activos").textContent = activos;
+  document.getElementById("n-verificados").textContent = verificados;
+  document.getElementById("n-rechazados").textContent = rechazados;
+  document.getElementById("n-usados").textContent = usados;
+}
+
+/* ================= QR ================= */
+
+const qrActualEl = document.getElementById("qr-actual");
+const qrMsg = document.getElementById("qr-msg");
+let QR_PENDIENTE_B64 = null;
+
+async function cargarQR() {
+  const doc = await db.collection("config").doc("qr").get();
+  if (doc.exists && doc.data().imagen) {
+    qrActualEl.innerHTML = `<img src="${doc.data().imagen}">`;
+  } else {
+    qrActualEl.innerHTML = `<span class="qr-preview empty">Sin QR configurado — los pedidos nuevos quedarán congelados.</span>`;
+  }
+}
+
+document.getElementById("qr-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    QR_PENDIENTE_B64 = await imagenABase64(file, 700, 0.8);
+    qrActualEl.innerHTML = `<img src="${QR_PENDIENTE_B64}">`;
+  } catch (err) { alert(err.message); e.target.value = ""; }
+});
+
+document.getElementById("btn-guardar-qr").addEventListener("click", async () => {
+  const link = document.getElementById("qr-link").value.trim();
+  const imagen = link || QR_PENDIENTE_B64;
+  if (!imagen) { alert("Sube una imagen o pega un link primero."); return; }
+  await db.collection("config").doc("qr").set({ imagen, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+  QR_PENDIENTE_B64 = null;
+  document.getElementById("qr-link").value = "";
+  document.getElementById("qr-file").value = "";
+  qrMsg.textContent = "QR guardado correctamente.";
+  qrMsg.classList.remove("hidden");
+  await cargarQR();
+});
+
+document.getElementById("btn-quitar-qr").addEventListener("click", async () => {
+  if (!confirm("¿Quitar el QR actual? Los nuevos pedidos quedarán congelados hasta que subas uno nuevo.")) return;
+  await db.collection("config").doc("qr").delete();
+  await cargarQR();
+});
